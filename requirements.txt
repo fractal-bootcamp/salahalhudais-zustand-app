@@ -1,0 +1,227 @@
+Goals:
+  - Create a task management app similar to Jire/Linear but primarily Linear
+  - Create a task management app that is:
+    - Easy to use and understand
+    - Maintainable and extensible
+    - Deployable and scalable 
+    - Well-tested
+
+Tabbed view:
+  - Create a tabbed view for the app
+    - add All issues tab
+    - add active issues tab
+    - Add backlog tab tab
+    - Add icon to add a view tab.
+
+Task Management view:
+  - Create a task management view
+    - Add a task list depending on tab selected
+    - Each task will have a priority, title, status.
+    - Each task will have a modal where you can read about the task and modify it.
+  - Add a task button to create a new task.
+    - Add task modal with fields:
+      - Title: string
+      - Description: string
+      - Priority: 'Low', 'Medium', 'High'
+      - Status: 'Pending', 'In Progress', 'Completed', 'Backlog'
+
+Storage:
+  - Add local storage to save the tasks.
+
+UI: Shadcn/TailwindCSS/MUI/React
+
+State Management: Zustand
+
+UI framework: TailwindCSS/Shadcn/MUI/React
+
+Animation: Use autoanimate to make the app more interactive, the modals opening up smoothly and clearly.
+
+Icons: Use Lucide icons.
+
+
+Task Interface -> Data Model:
+  - Task
+    - id: string UUIDv4
+    - title: string
+    - description: string text
+    - priority: 'Low', 'Medium', 'High'
+    - status: 'Pending', 'In Progress', 'Completed', 'Backlog'
+    - createdAt: timestamp date.now()
+    - updatedAt: timestamp date.now()
+    - completedAt: timestamp date.now()
+
+State Management: Have a store to manage the state of the application.
+  - Task State:
+    - List of all tasks: Task[]
+    - Current active/selected task: Task | null
+    - Functions to add/edit/delete tasks:
+      - addTask: (task: Task) => void
+      - editTask: (task: Task) => void
+      - deleteTask: (task: Task) => void
+
+  UI State:
+    - Current tab selection
+    - Modal visibility states
+    - Filter/sort criteria
+
+  User Preferences:
+    - View preferences
+    - Sort order preference
+
+
+Programming paradigm: Functional Programming
+
+
+Extendability:
+  - Want to be able to extend the app with new features in the future.
+  - Adding new features should not impact existing features.
+  - Adding new features should be easy and clear.
+  - Adding new features should be able to be done by someone who has not worked on the code before.
+  - Adding new features should be able to be done by someone who does not know the codebase.
+  - Use a modular architecture.
+  - Use a functional programming paradigm.
+  - Use a state management library.
+  - Use a UI framework.
+  - Use a storage library.
+  - Use a animation library.
+  - Use a icon library.
+
+
+
+Proposed structure:
+
+Project Setup and Technical Stack
+
+To begin, we’ll set up a React application using Create React App or Vite, integrating TailwindCSS for styling and Shadcn components for UI elements. Shadcn, a collection of React components based on Tailwind CSS, requires copying components from their GitHub repository (Shadcn Components), as it’s not a published package. We’ll also install zustand for state management, autoanimate for animations, and lucide-react for icons, ensuring a modern, performant stack.
+
+Data Models and Constants
+
+We’ll define the following data models in a types.ts file:
+
+Task Interface:
+ts
+
+
+
+interface Task {
+  id: string;
+  title: string;
+  description: string;
+  priority: 'Low' | 'Medium' | 'High';
+  status: 'Pending' | 'In Progress' | 'Completed' | 'Backlog';
+  createdAt: number;
+  updatedAt: number;
+  completedAt: number | null;
+}
+Tab Interface:
+ts
+
+
+
+interface Tab {
+  id: string;
+  name: string;
+  statusFilter: string[];
+  priorityFilter: string[];
+  isCustom: boolean;
+  sortBy?: 'priority' | 'status' | 'createdAt' | 'updatedAt';
+  sortOrder?: 'asc' | 'desc';
+}
+Constants will include:
+
+STATUS_OPTIONS = ['Pending', 'In Progress', 'Completed', 'Backlog'] as const
+PRIORITY_OPTIONS = ['Low', 'Medium', 'High'] as const
+These ensure type safety and consistency across the app.
+
+State Management with Zustand
+
+We’ll create a store in store.ts using Zustand, managing:
+
+tasks: Task[]
+predefinedTabs: Tab[] (e.g., All Issues, Active Issues, Backlog, with fixed filters and sort orders)
+customTabs: Tab[] (user-defined, editable/deletable)
+activeTab: Tab | null
+activeTask: Task | null
+Functions will include:
+
+addTask, editTask, deleteTask for tasks
+addTab, editTab, deleteTab for custom tabs
+setActiveTab, setActiveTask for selection
+Local storage integration will save tasks and customTabs on changes, loading them on app initialization to ensure persistence. For example, saving to local storage:
+
+ts
+
+
+
+const saveToLocalStorage = (state: { tasks: Task[], customTabs: Tab[] }) => {
+  localStorage.setItem('appState', JSON.stringify(state));
+};
+Utility Functions
+
+In utils.ts, we’ll implement:
+
+generateTaskId: Using crypto.randomUUID() for unique IDs, ensuring no conflicts with task additions/removals.
+sortTasks: A function to sort tasks based on criteria like priority (mapped to numerical values: Low=0, Medium=1, High=2), status (alphabetical), or timestamps (numerical), with asc/desc options:
+ts
+
+
+
+const sortTasks = (tasks: Task[], sortBy: string | undefined, sortOrder: string | undefined) => {
+  return tasks.sort((a, b) => {
+    let comparison = 0;
+    if (sortBy === 'priority') {
+      const priorityMap = { Low: 0, Medium: 1, High: 2 };
+      comparison = priorityMap[a.priority] - priorityMap[b.priority];
+    } else if (sortBy === 'status') {
+      comparison = a.status.localeCompare(b.status);
+    } else if (sortBy === 'createdAt' || sortBy === 'updatedAt') {
+      comparison = a[sortBy] - b[sortBy];
+    }
+    return sortOrder === 'desc' ? -comparison : comparison;
+  });
+};
+UI Components and Features
+
+We’ll organize components in a components folder, implementing:
+
+Tabbed View (TabComponent.tsx):
+Use Shadcn’s Tabs component to display all tabs (predefined + custom).
+Predefined tabs (e.g., All Issues: statusFilter=STATUS_OPTIONS, priorityFilter=PRIORITY_OPTIONS, sortBy='updatedAt', sortOrder='desc') are read-only.
+Custom tabs show edit/delete options, opening modals for changes.
+Task List (TaskList.tsx):
+Filter tasks based on activeTab.statusFilter and activeTab.priorityFilter.
+Sort filtered tasks using sortTasks with tab’s sortBy/sortOrder.
+Display tasks using TaskCard components, wrapped with autoanimate for list animations.
+Task Card (TaskCard.tsx):
+Show title, priority (with color/icon), status.
+Click opens TaskModal, setting activeTask in store.
+Task Modal (TaskModal.tsx):
+Use Shadcn’s Dialog component for viewing/editing tasks.
+Fields: title (input), description (textarea), priority (select: Low/Medium/High), status (select: Pending/In Progress/Completed/Backlog).
+Save updates editTask, handling completedAt (set on status='Completed', null otherwise) and updatedAt (current time).
+Delete button calls deleteTask.
+Add Task Modal (AddTaskModal.tsx):
+Similar to TaskModal, but for creating new tasks.
+Generate ID, set createdAt, updatedAt to current time, completedAt to null, call addTask.
+Add Tab Modal (AddTabModal.tsx):
+Dialog for creating custom tabs.
+Fields: name (input), statusFilter (checkboxes for each status), priorityFilter (checkboxes for each priority), sortBy (select: priority/status/createdAt/updatedAt), sortOrder (select: asc/desc).
+Save creates new Tab, adds to customTabs.
+Edit Tab Modal (EditTabModal.tsx):
+Similar to AddTabModal, pre-filled with current tab data, for editing custom tabs.
+Animations and Icons
+
+Use autoanimate (AutoAnimate) for smooth transitions, wrapping components like task list for add/remove animations and modals for open/close effects.
+Use Lucide icons (Lucide Icons) for UI elements, e.g., Plus icon for Add Task button, Pencil for edit options.
+Testing and Deployment
+
+Testing: Write unit tests for sortTasks using Jest, and integration tests for components with React Testing Library (React Testing Library). Ensure components handle state changes correctly.
+Deployment: Build with Vite or Create React App, deploy to static hosting like Netlify (Netlify) or GitHub Pages (GitHub Pages), ensuring no server-side dependencies due to local storage use.
+Extendability and Maintenance
+
+To ensure ease of extension:
+
+Organize code into folders: components, store, utils, types, constants.
+Use functional programming: pure functions, immutability (e.g., spread operators for state updates), avoiding class components.
+Document with comments, e.g., explaining how to add new features like task due dates or integrations.
+Consider a plugin system for future features, allowing new developers to add functionality without deep codebase knowledge.
